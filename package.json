@@ -1,0 +1,38 @@
+{
+  "name": "queryforge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A SQL database engine built from scratch — storage, WAL, parser, planner, executor — with a playground that animates the internals as you type.",
+  "author": "Chanda Charan Reddy <charanreddychanda@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@codemirror/lang-sql": "^6.7.1",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.34.1",
+    "@uiw/codemirror-theme-github": "^4.23.6",
+    "@uiw/react-codemirror": "^4.23.6",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.11",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "fast-check": "^3.22.0",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  }
+}

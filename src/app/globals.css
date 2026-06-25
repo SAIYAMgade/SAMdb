@@ -1,0 +1,123 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-ink-800 text-slatey-100 font-sans antialiased;
+    /* a faint engineering grid over the whole surface */
+    background-image:
+      linear-gradient(to right, rgba(39, 49, 63, 0.18) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(39, 49, 63, 0.18) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  ::selection {
+    background: rgba(34, 211, 238, 0.28);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #27313f transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #27313f;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #3a4658;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-lg border border-ink-400 bg-ink-700/70 backdrop-blur-sm;
+  }
+  .panel-head {
+    @apply flex items-center justify-between border-b border-ink-400 px-3 py-2;
+  }
+  .panel-title {
+    @apply font-mono text-2xs font-semibold uppercase tracking-[0.14em] text-slatey-400;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded border border-ink-400 bg-ink-600 px-1.5 py-0.5 font-mono text-2xs;
+  }
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-ink-400 bg-ink-600 px-3 py-1.5 font-mono text-xs font-medium text-slatey-200 transition-colors duration-200 hover:border-slatey-500 hover:bg-ink-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-active/60 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-run {
+    @apply border-run-dim bg-run/15 text-run hover:bg-run/25 hover:border-run;
+  }
+  .btn-danger {
+    @apply border-split-dim bg-split/10 text-split hover:bg-split/20 hover:border-split;
+  }
+  .kbd {
+    @apply rounded border border-ink-400 bg-ink-800 px-1.5 py-0.5 font-mono text-2xs text-slatey-300;
+  }
+  /* the oscilloscope scan-line that drifts across the hero canvas */
+  .scanlines::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 3px,
+      rgba(34, 211, 238, 0.02) 3px,
+      rgba(34, 211, 238, 0.02) 4px
+    );
+  }
+}
+
+/* CodeMirror sits inside our dark instrument; tune it to the palette. */
+.cm-editor {
+  height: 100%;
+  background: transparent !important;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.cm-editor.cm-focused {
+  outline: none !important;
+}
+.cm-gutters {
+  background: transparent !important;
+  border-right: 1px solid #1b2433 !important;
+  color: #52606f !important;
+}
+.cm-activeLineGutter,
+.cm-activeLine {
+  background: rgba(34, 211, 238, 0.05) !important;
+}
+.cm-selectionBackground,
+.cm-content ::selection {
+  background: rgba(34, 211, 238, 0.22) !important;
+}
+.cm-cursor {
+  border-left-color: #22d3ee !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
