@@ -13,6 +13,7 @@ import { StatsBar } from "@/components/StatsBar";
 import { Timeline } from "@/components/Timeline";
 import { WalPanel } from "@/components/WalPanel";
 import { HelpOverlay } from "@/components/HelpOverlay";
+import { SamLandingHero } from "@/components/SamLandingHero";
 import {
   AlertIcon,
   GitHubIcon,
@@ -46,6 +47,7 @@ export default function Playground() {
   const [tab, setTab] = useState<Tab>("results");
   const [helpOpen, setHelpOpen] = useState(false);
   const [booted, setBooted] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
 
   // playback
   const [step, setStep] = useState(0);
@@ -112,6 +114,10 @@ export default function Playground() {
   const revealed =
     result?.kind === "select" ? (step >= total ? null : pb.emittedRows.length) : null;
 
+  if (showLanding) {
+    return <SamLandingHero onGetStarted={() => setShowLanding(false)} />;
+  }
+
   return (
     <div className="flex h-screen min-h-0 flex-col bg-[#0a0a0a] text-sm">
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
@@ -129,11 +135,25 @@ export default function Playground() {
         )}
 
         <nav className="ml-auto hidden items-center gap-2 md:flex">
+          <button
+            onClick={() => setShowLanding(true)}
+            className="border border-transparent px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-[#4a7a40]
+                       transition-all duration-150 hover:border-[#1f521f] hover:text-[#33ff00]"
+          >
+            [ INTRO / HOME ]
+          </button>
           <NavLink href="/about-project">[ the build ]</NavLink>
           <NavLink href="/about">[ about ]</NavLink>
         </nav>
 
         <div className="flex items-center gap-2">
+          <button
+            className="btn"
+            onClick={() => setShowLanding(true)}
+            title="Return to the introduction landing page"
+          >
+            <span className="inline sm:hidden">[ INTRO ]</span>
+          </button>
           <button
             className="btn"
             onClick={() => setHelpOpen(true)}
