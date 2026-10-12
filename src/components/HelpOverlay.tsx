@@ -4,12 +4,12 @@ import { useEffect } from "react";
 import { CloseIcon } from "./Icons";
 
 const ITEMS = [
-  ["Editor", "Write one SQL statement. Cmd/Ctrl + Enter runs it. The grammar is a real subset: CREATE TABLE, INSERT, SELECT … WHERE … ORDER BY … LIMIT."],
-  ["B+tree", "The index. Each node is one 4 KB page. The cyan path is the exact set of nodes this query visited; a green cell is a key match; a rose node just split."],
-  ["Page grid", "Every page the engine has allocated. Borders light up as pages are read (cyan), written (amber), or freshly allocated (green) during the run."],
-  ["Timeline", "Scrub or play back the real event trace. Every frame is something the engine actually did — tokenize, plan, descend the tree, read a page, emit a row."],
-  ["AST / Plan", "The parsed syntax tree, then the logical plan and the physical plan. Flip 'force full scan' to watch the optimizer's choice change the row-visit count."],
-  ["WAL", "The write-ahead log. Pull the plug to wipe memory; Recover replays the log to rebuild every page from scratch."],
+  ["[01] SQL EDITOR", "Write one SQL statement. Cmd/Ctrl + Enter runs it. Supported grammar: CREATE TABLE, INSERT, SELECT … WHERE … ORDER BY … LIMIT. Strict typing, no unsupported statements allowed."],
+  ["[02] B+TREE INDEX", "The physical index structure. Each node is one 4 KB slotted page. Neon green paths show the traversal; bright cells indicate key matches; red nodes mark splits."],
+  ["[03] STORAGE PAGES", "Visualizes real 4 KB pages allocated by the pager. Status indicators display read (green), write (amber), and allocation (light green) activity in real time."],
+  ["[04] TRACE TIMELINE", "Step through or scrub the execution trace recorded by the engine's Tracer. Every frame maps to a real internal event: tokenization, parse, plan, tree traversal, row scan, emit."],
+  ["[05] PLAN & AST", "Inspect the generated Abstract Syntax Tree, logical plan, and optimized physical plan. Toggle 'force seq scan' to see the difference between index range scan vs full table scan."],
+  ["[06] WAL & RECOVERY", "Logical Write-Ahead Log. Append-only redo records guarantee crash durability. Click [ CRASH ] to simulate power loss, then [ RECOVER ] to rebuild derived state from the log."],
 ];
 
 export function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -23,33 +23,38 @@ export function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => v
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 font-mono backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="What am I looking at?"
+      aria-label="SAMDB Manual"
       onClick={onClose}
     >
       <div
-        className="panel max-h-[85vh] w-full max-w-2xl overflow-auto"
+        className="border border-[#1f521f] bg-[#0d100d] max-h-[85vh] w-full max-w-2xl overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="panel-head sticky top-0 bg-ink-700">
-          <span className="panel-title">What am I looking at?</span>
-          <button className="btn px-1.5 py-1" onClick={onClose} aria-label="Close">
-            <CloseIcon />
+        <div className="flex items-center justify-between border-b border-[#1f521f] bg-[#111411] px-4 py-2">
+          <span className="font-mono text-2xs uppercase tracking-[0.18em] text-[#33ff00]">
+            ┌─ SAMDB ARCHITECTURE MANUAL ─
+          </span>
+          <button
+            className="border border-[#1f521f] bg-[#0a0a0a] p-1 text-[#4a7a40] hover:border-[#ff3333] hover:text-[#ff3333]"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <CloseIcon className="h-3.5 w-3.5" />
           </button>
         </div>
         <div className="grid gap-3 p-4 sm:grid-cols-2">
           {ITEMS.map(([title, body]) => (
-            <div key={title} className="rounded-md border border-ink-400 bg-ink-800/60 p-3">
-              <div className="mb-1 font-mono text-xs font-semibold text-active">{title}</div>
-              <p className="text-xs leading-relaxed text-slatey-300">{body}</p>
+            <div key={title} className="border border-[#1f521f] bg-[#0a0a0a] p-3">
+              <div className="mb-1 font-mono text-xs font-semibold text-[#33ff00]">{title}</div>
+              <p className="text-2xs leading-relaxed text-[#c8ffb0]">{body}</p>
             </div>
           ))}
         </div>
-        <div className="border-t border-ink-400 px-4 py-3 text-2xs text-slatey-500">
-          Nothing here is mocked. Every highlight is replayed from the engine&apos;s own event log — if it
-          didn&apos;t happen, you won&apos;t see it.
+        <div className="border-t border-[#1f521f] bg-[#0a0a0a] px-4 py-2.5 text-2xs text-[#1f521f]">
+          -- All visualizations are backed by real engine instrumentation events. Zero simulated traces.
         </div>
       </div>
     </div>

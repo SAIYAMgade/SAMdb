@@ -9,12 +9,13 @@ interface TreeSnap {
   nodes: BTreeNodeView[];
 }
 
-const CELL_W = 30;
-const CELL_H = 26;
-const V_GAP = 62;
-const SLOT_W = 4 * CELL_W + 22;
-const PAD_X = 24;
-const PAD_TOP = 20;
+// ── Layout constants ───────────────────────────────────────────────────────
+const CELL_W = 38;
+const CELL_H = 32;
+const V_GAP = 68;
+const SLOT_W = 4 * CELL_W + 28;
+const PAD_X = 32;
+const PAD_TOP = 24;
 
 interface Laid {
   page: number;
@@ -35,7 +36,6 @@ interface Edge {
 
 function layout(tree: TreeSnap) {
   const byPage = new Map(tree.nodes.map((n) => [n.page, n]));
-  const depth = new Map<number, number>();
   const laid = new Map<number, Laid>();
   const edges: Edge[] = [];
   let slot = 0;
@@ -46,7 +46,6 @@ function layout(tree: TreeSnap) {
   const place = (page: number, d: number): number => {
     const n = byPage.get(page);
     if (!n) return 0;
-    depth.set(page, d);
     maxDepth = Math.max(maxDepth, d);
     const w = nodeWidth(n);
     let centerX: number;
@@ -69,7 +68,6 @@ function layout(tree: TreeSnap) {
   };
   place(tree.root, 0);
 
-  // build edges parent → child
   for (const n of tree.nodes) {
     if (n.type === "internal") {
       const p = laid.get(n.page)!;
@@ -89,7 +87,7 @@ function layout(tree: TreeSnap) {
   }
 
   const width = PAD_X * 2 + Math.max(1, slot) * SLOT_W;
-  const height = PAD_TOP * 2 + (maxDepth + 1) * (CELL_H + V_GAP) - V_GAP + 22;
+  const height = PAD_TOP * 2 + (maxDepth + 1) * (CELL_H + V_GAP) - V_GAP + 28;
   return { nodes: [...laid.values()], edges, width, height };
 }
 
@@ -106,9 +104,9 @@ export function BTreeView({
 
   if (!tree || !L || tree.nodes.length === 0) {
     return (
-      <Empty
-        title="No index allocated"
-        sub="Create a table with an INT PRIMARY KEY, then insert rows to grow a B+tree."
+      <EmptyTree
+        title="NO B+TREE INDEX ALLOCATED"
+        sub="Execute CREATE TABLE with INT PRIMARY KEY, then INSERT tuples to expand the B+tree index."
       />
     );
   }
@@ -123,7 +121,7 @@ export function BTreeView({
         role="img"
         aria-label="B+tree index structure with the current query's search path highlighted"
       >
-        {/* edges */}
+        {/* ── Edges ─────────────────────────────────────────────── */}
         {L.edges.map((e) => {
           const onPath = pb.visitedTreePages.has(e.childPage);
           return (
@@ -133,109 +131,183 @@ export function BTreeView({
               y1={e.y1}
               x2={e.x2}
               y2={e.y2}
-              stroke={onPath ? "#22d3ee" : "#27313f"}
+              stroke={onPath ? "#33ff00" : "#1f521f"}
               strokeWidth={onPath ? 2 : 1.25}
-              strokeOpacity={onPath ? 0.9 : 0.7}
+              strokeOpacity={onPath ? 1 : 0.6}
+              strokeDasharray={onPath ? undefined : "4 3"}
             />
           );
         })}
 
-        {/* nodes */}
+        {/* ── Nodes ─────────────────────────────────────────────── */}
         {L.nodes.map((n) => {
           const touch = pb.visitedTreePages.get(n.page);
           const visited = !!touch;
           const split = pb.splitPages.has(n.page);
           const active = pb.activeTreePage === n.page;
-          const stroke = split ? "#fb7185" : visited ? "#22d3ee" : n.type === "leaf" ? "#3a4658" : "#475569";
+
+          const strokeColor = split
+            ? "#ff3333"
+            : active
+            ? "#33ff00"
+            : visited
+            ? "#33ff00"
+            : n.type === "leaf"
+            ? "#2a4a25"
+            : "#1f521f";
+
+          const fillColor = split
+            ? "rgba(255,51,51,0.12)"
+            : visited
+            ? "rgba(51,255,0,0.08)"
+            : "#0d100d";
+
           return (
-            <g key={n.page} className={active ? "animate-pulse-node" : ""} style={{ transformOrigin: `${n.x + n.w / 2}px ${n.y + CELL_H / 2}px` }}>
-              {/* node frame */}
+            <g
+              key={n.page}
+              className={active ? "animate-pulse-node" : ""}
+              style={{
+                transformOrigin: `${n.x + n.w / 2}px ${n.y + CELL_H / 2}px`,
+              }}
+            >
+              {/* Node frame — sharp corners, no radius */}
               <rect
-                x={n.x - 3}
-                y={n.y - 3}
-                width={n.w + 6}
-                height={CELL_H + 6}
-                rx={5}
-                fill={visited ? "rgba(34,211,238,0.08)" : "#0f1620"}
-                stroke={stroke}
-                strokeWidth={visited || split ? 1.8 : 1.2}
+                x={n.x - 2}
+                y={n.y - 2}
+                width={n.w + 4}
+                height={CELL_H + 4}
+                rx={0}
+                fill={fillColor}
+                stroke={strokeColor}
+                strokeWidth={visited || split || active ? 2 : 1.2}
               />
-              {/* key cells */}
+
+              {/* Key dividers */}
+              {n.keys.slice(0, -1).map((_, i) => {
+                const cx = n.x + (i + 1) * CELL_W;
+                return (
+                  <line
+                    key={i}
+                    x1={cx}
+                    y1={n.y}
+                    x2={cx}
+                    y2={n.y + CELL_H}
+                    stroke={visited ? "#1f521f" : "#111411"}
+                    strokeWidth={1}
+                  />
+                );
+              })}
+
+              {/* Key values */}
               {(n.keys.length ? n.keys : [NaN]).map((k, i) => {
                 const cx = n.x + i * CELL_W;
-                const isHit = touch?.hitKey !== undefined && touch.hitKey === k;
+                const isHit =
+                  touch?.hitKey !== undefined && touch.hitKey === k;
                 return (
                   <g key={i}>
-                    {i > 0 && (
-                      <line x1={cx} y1={n.y} x2={cx} y2={n.y + CELL_H} stroke="#1b2433" strokeWidth={1} />
-                    )}
-                    <text
-                      x={cx + CELL_W / 2}
-                      y={n.y + CELL_H / 2 + 4}
-                      textAnchor="middle"
-                      fontFamily="var(--font-mono)"
-                      fontSize={12}
-                      fill={isHit ? "#22c55e" : visited ? "#e6edf3" : "#9aa8b8"}
-                      fontWeight={isHit ? 700 : 500}
-                    >
-                      {Number.isNaN(k) ? "·" : k}
-                    </text>
                     {isHit && (
                       <rect
                         x={cx + 1}
                         y={n.y + 1}
                         width={CELL_W - 2}
                         height={CELL_H - 2}
-                        rx={3}
-                        fill="none"
-                        stroke="#22c55e"
-                        strokeWidth={1.5}
+                        rx={0}
+                        fill="rgba(51,255,0,0.2)"
+                        stroke="#33ff00"
+                        strokeWidth={2}
                       />
                     )}
+                    <text
+                      x={cx + CELL_W / 2}
+                      y={n.y + CELL_H / 2 + 5}
+                      textAnchor="middle"
+                      fontFamily="'JetBrains Mono', monospace"
+                      fontSize={13}
+                      fontWeight={isHit ? 700 : 600}
+                      fill={
+                        isHit
+                          ? "#33ff00"
+                          : split
+                          ? "#ff3333"
+                          : visited
+                          ? "#c8ffb0"
+                          : "#8dcf7a"
+                      }
+                    >
+                      {Number.isNaN(k) ? "·" : k}
+                    </text>
                   </g>
                 );
               })}
-              {/* page tag */}
+
+              {/* Node type + page tag */}
               <text
                 x={n.x + n.w / 2}
-                y={n.y + CELL_H + 13}
+                y={n.y + CELL_H + 16}
                 textAnchor="middle"
-                fontFamily="var(--font-mono)"
-                fontSize={9}
-                fill={visited ? "#67e8f9" : "#52606f"}
+                fontFamily="'JetBrains Mono', monospace"
+                fontSize={10}
+                fontWeight={600}
+                fill={visited ? "#33ff00" : split ? "#ff3333" : "#4a7a40"}
               >
-                {n.type === "leaf" ? "leaf" : "node"} #{n.page}
+                {n.type === "leaf" ? "LEAF" : "INTERNAL"} #{n.page}
               </text>
             </g>
           );
         })}
       </svg>
 
-      {/* legend */}
-      <div className="pointer-events-none sticky bottom-0 left-0 flex flex-wrap gap-3 px-3 py-2 text-2xs text-slatey-400">
-        <Legend swatch="#22d3ee" label="search path" />
-        <Legend swatch="#22c55e" label="key match" />
-        <Legend swatch="#fb7185" label="split" />
-        {indexColumn && <span className="font-mono">index on {indexColumn}</span>}
+      {/* Legend */}
+      <div className="pointer-events-none sticky bottom-0 left-0 flex flex-wrap gap-4 border-t border-[#1f521f] bg-[#0d100d] px-4 py-2 font-mono text-xs text-[#8dcf7a]">
+        <Legend swatch="#33ff00" label="SEARCH PATH" />
+        <Legend swatch="#33ff00" label="KEY HIT" bright />
+        <Legend swatch="#ff3333" label="NODE SPLIT" />
+        {indexColumn && (
+          <span className="ml-auto text-[#8dcf7a] font-semibold">
+            INDEX COLUMN: <span className="text-[#33ff00] font-bold">{indexColumn}</span>
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-function Legend({ swatch, label }: { swatch: string; label: string }) {
+function Legend({
+  swatch,
+  label,
+  bright,
+}: {
+  swatch: string;
+  label: string;
+  bright?: boolean;
+}) {
   return (
-    <span className="inline-flex items-center gap-1.5 font-mono">
-      <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: swatch }} />
+    <span className="inline-flex items-center gap-1.5 font-bold">
+      <span
+        className="inline-block h-2.5 w-2.5"
+        style={{
+          background: swatch,
+          opacity: bright ? 1 : 0.6,
+          boxShadow: bright ? `0 0 6px ${swatch}` : "none",
+        }}
+      />
       {label}
     </span>
   );
 }
 
-function Empty({ title, sub }: { title: string; sub: string }) {
+function EmptyTree({ title, sub }: { title: string; sub: string }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-      <div className="font-mono text-sm text-slatey-300">{title}</div>
-      <div className="max-w-xs text-xs text-slatey-500">{sub}</div>
+    <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="font-mono text-xs text-[#33ff00] font-bold uppercase tracking-widest">
+        {title}
+      </div>
+      <div className="font-mono text-xs text-[#8dcf7a] max-w-sm leading-relaxed">
+        {sub}
+      </div>
+      <div className="mt-1 font-mono text-xs text-[#33ff00] border border-[#1f521f] bg-[#0a0a0a] px-3.5 py-1.5 font-semibold">
+        Try: CREATE TABLE users (id INT PRIMARY KEY, name TEXT)
+      </div>
     </div>
   );
 }

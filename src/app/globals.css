@@ -1,117 +1,256 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ── SAMDB CSS custom properties ──────────────────────────────────────────── */
 :root {
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Terminal color tokens */
+  --color-bg: #0a0a0a;
+  --color-panel: #0d100d;
+  --color-border: #1f521f;
+  --color-green: #33ff00;
+  --color-green-dim: #1f521f;
+  --color-amber: #ffb000;
+  --color-red: #ff3333;
+  --color-text: #33ff00;
+  --color-text-muted: #4a7a40;
+
+  /* Glow effects */
+  --glow-green: 0 0 8px rgba(51, 255, 0, 0.4);
+  --glow-green-strong: 0 0 16px rgba(51, 255, 0, 0.6);
+  --glow-amber: 0 0 8px rgba(255, 176, 0, 0.4);
+  --glow-red: 0 0 8px rgba(255, 51, 51, 0.5);
 }
 
+/* ── Base layer ────────────────────────────────────────────────────────────── */
 @layer base {
   html {
     color-scheme: dark;
+    font-family: var(--font-mono);
   }
+
   body {
-    @apply bg-ink-800 text-slatey-100 font-sans antialiased;
-    /* a faint engineering grid over the whole surface */
+    @apply bg-[#0a0a0a] text-[#33ff00] antialiased;
+    font-family: var(--font-mono);
+    /* Terminal phosphor grid */
     background-image:
-      linear-gradient(to right, rgba(39, 49, 63, 0.18) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(39, 49, 63, 0.18) 1px, transparent 1px);
-    background-size: 28px 28px;
+      linear-gradient(to right, rgba(31, 82, 31, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(31, 82, 31, 0.07) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
+
+  /* Text selection: green tint */
   ::selection {
-    background: rgba(34, 211, 238, 0.28);
+    background: rgba(51, 255, 0, 0.2);
+    color: #0a0a0a;
   }
+
+  /* Scrollbars — minimal, green-tinted */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #27313f transparent;
+    scrollbar-color: #1f521f transparent;
   }
   *::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 6px;
+    height: 6px;
   }
   *::-webkit-scrollbar-thumb {
-    background: #27313f;
-    border-radius: 6px;
-    border: 2px solid transparent;
-    background-clip: content-box;
+    background: #1f521f;
+    border-radius: 0;
   }
   *::-webkit-scrollbar-thumb:hover {
-    background: #3a4658;
-    background-clip: content-box;
+    background: #33ff00;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 
+/* ── Component layer ───────────────────────────────────────────────────────── */
 @layer components {
+
+  /* ── Panel: a terminal window ─────────────────────────────────────── */
   .panel {
-    @apply rounded-lg border border-ink-400 bg-ink-700/70 backdrop-blur-sm;
+    @apply border border-[#1f521f] bg-[#0d100d];
+    border-radius: 0;
   }
+
   .panel-head {
-    @apply flex items-center justify-between border-b border-ink-400 px-3 py-2;
+    @apply flex items-center justify-between border-b border-[#1f521f] px-3 py-2;
   }
+
   .panel-title {
-    @apply font-mono text-2xs font-semibold uppercase tracking-[0.14em] text-slatey-400;
+    @apply font-mono text-xs font-semibold uppercase tracking-[0.16em] text-[#33ff00]/80;
+    letter-spacing: 0.16em;
   }
+
+  /* ASCII title bar decoration */
+  .panel-title-bar {
+    @apply flex items-center gap-0 border-b border-[#1f521f] px-3 py-1.5 bg-[#111411];
+  }
+
+  /* ── Chip: small badge ────────────────────────────────────────────── */
   .chip {
-    @apply inline-flex items-center gap-1 rounded border border-ink-400 bg-ink-600 px-1.5 py-0.5 font-mono text-2xs;
+    @apply inline-flex items-center gap-1.5 border border-[#1f521f] bg-[#0d100d] px-2 py-0.5 font-mono text-xs text-[#8dcf7a];
+    border-radius: 0;
   }
+
+  /* ── Buttons: terminal-style ──────────────────────────────────────── */
   .btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-ink-400 bg-ink-600 px-3 py-1.5 font-mono text-xs font-medium text-slatey-200 transition-colors duration-200 hover:border-slatey-500 hover:bg-ink-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-active/60 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex cursor-pointer items-center justify-center gap-1.5 border border-[#1f521f]
+           bg-[#0d100d] px-3 py-1.5 font-mono text-xs font-semibold text-[#c8ffb0]
+           transition-all duration-150
+           hover:border-[#33ff00] hover:bg-[#33ff00] hover:text-[#0a0a0a]
+           focus:outline-none focus-visible:ring-1 focus-visible:ring-[#33ff00] focus-visible:ring-offset-1 focus-visible:ring-offset-[#0a0a0a]
+           disabled:cursor-not-allowed disabled:opacity-30;
+    border-radius: 0;
   }
+
   .btn-run {
-    @apply border-run-dim bg-run/15 text-run hover:bg-run/25 hover:border-run;
+    @apply border-[#1f521f] bg-[#0a110a] text-[#33ff00]
+           hover:bg-[#33ff00] hover:text-[#0a0a0a] hover:border-[#33ff00];
+    box-shadow: 0 0 0 0 rgba(51, 255, 0, 0);
+    transition: box-shadow 150ms ease, background-color 150ms ease, color 150ms ease, border-color 150ms ease;
   }
+  .btn-run:hover {
+    box-shadow: var(--glow-green);
+  }
+
   .btn-danger {
-    @apply border-split-dim bg-split/10 text-split hover:bg-split/20 hover:border-split;
+    @apply border-[#6b1414] bg-[#0a0505] text-[#ff3333]
+           hover:bg-[#ff3333] hover:text-[#0a0a0a] hover:border-[#ff3333];
   }
+
+  .btn-amber {
+    @apply border-[#7a5500] bg-[#0a0800] text-[#ffb000]
+           hover:bg-[#ffb000] hover:text-[#0a0a0a] hover:border-[#ffb000];
+  }
+
+  /* ── Keyboard shortcut badge ──────────────────────────────────────── */
   .kbd {
-    @apply rounded border border-ink-400 bg-ink-800 px-1.5 py-0.5 font-mono text-2xs text-slatey-300;
+    @apply border border-[#1f521f] bg-[#0a0a0a] px-1.5 py-0.5 font-mono text-xs text-[#8dcf7a];
+    border-radius: 0;
   }
-  /* the oscilloscope scan-line that drifts across the hero canvas */
+
+  /* ── CRT scanlines overlay ────────────────────────────────────────── */
   .scanlines::before {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
+    z-index: 10;
     background: repeating-linear-gradient(
       to bottom,
       transparent 0,
       transparent 3px,
-      rgba(34, 211, 238, 0.02) 3px,
-      rgba(34, 211, 238, 0.02) 4px
+      rgba(51, 255, 0, 0.018) 3px,
+      rgba(51, 255, 0, 0.018) 4px
     );
+  }
+
+  /* ── Green phosphor text glow ─────────────────────────────────────── */
+  .text-glow {
+    text-shadow: 0 0 8px rgba(51, 255, 0, 0.5);
+  }
+
+  .text-glow-strong {
+    text-shadow: 0 0 12px rgba(51, 255, 0, 0.7), 0 0 24px rgba(51, 255, 0, 0.3);
+  }
+
+  .text-glow-amber {
+    text-shadow: 0 0 8px rgba(255, 176, 0, 0.5);
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 8px rgba(255, 51, 51, 0.6);
+  }
+
+  /* ── Cursor blink ─────────────────────────────────────────────────── */
+  .cursor-blink::after {
+    content: "█";
+    animation: blink 1.2s step-end infinite;
+    color: #33ff00;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ── ASCII separator lines ────────────────────────────────────────── */
+  .ascii-sep {
+    @apply font-mono text-2xs text-[#1f521f] overflow-hidden whitespace-nowrap;
+    letter-spacing: 0;
+  }
+
+  /* ── Tab bar (terminal-style) ─────────────────────────────────────── */
+  .tab-btn {
+    @apply px-3 py-1 font-mono text-xs uppercase tracking-widest text-[#4a7a40]
+           border border-transparent transition-colors duration-150
+           hover:text-[#c8ffb0] hover:border-[#1f521f] cursor-pointer;
+    border-radius: 0;
+  }
+  .tab-btn-active {
+    @apply px-3 py-1 font-mono text-xs uppercase tracking-widest font-semibold
+           border border-[#33ff00] bg-[#33ff00] text-[#0a0a0a] cursor-default;
+    border-radius: 0;
   }
 }
 
-/* CodeMirror sits inside our dark instrument; tune it to the palette. */
+/* ── CodeMirror integration ────────────────────────────────────────────────── */
 .cm-editor {
   height: 100%;
   background: transparent !important;
-  font-family: var(--font-mono);
-  font-size: 13px;
+  font-family: var(--font-mono) !important;
+  font-size: 14px;
+  line-height: 1.6;
 }
 .cm-editor.cm-focused {
   outline: none !important;
 }
+.cm-scroller {
+  font-family: var(--font-mono) !important;
+}
 .cm-gutters {
-  background: transparent !important;
-  border-right: 1px solid #1b2433 !important;
-  color: #52606f !important;
+  background: #0d100d !important;
+  border-right: 1px solid #1f521f !important;
+  color: #1f521f !important;
+}
+.cm-lineNumbers .cm-gutterElement {
+  color: #4a7a40 !important;
+  font-size: 13px !important;
+  padding-right: 8px;
 }
 .cm-activeLineGutter,
 .cm-activeLine {
-  background: rgba(34, 211, 238, 0.05) !important;
+  background: rgba(51, 255, 0, 0.04) !important;
 }
 .cm-selectionBackground,
 .cm-content ::selection {
-  background: rgba(34, 211, 238, 0.22) !important;
+  background: rgba(51, 255, 0, 0.15) !important;
 }
 .cm-cursor {
-  border-left-color: #22d3ee !important;
+  border-left-color: #33ff00 !important;
+  border-left-width: 2px !important;
 }
+/* Syntax token colors */
+.ͼ1.cm-focused .cm-cursor { border-left-color: #33ff00 !important; }
+/* Keywords */
+.ͼo { color: #33ff00 !important; font-weight: 600; }
+/* Strings */
+.ͼm { color: #ffb000 !important; }
+/* Numbers */
+.ͼd { color: #c8ffb0 !important; }
+/* Comments */
+.ͼc { color: #2a4a25 !important; font-style: italic; }
+/* Operators */
+.ͼ4 { color: #4a7a40 !important; }
 
+/* ── Reduced-motion override ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

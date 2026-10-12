@@ -1,46 +1,48 @@
 import type { Metadata, Viewport } from "next";
-import { site } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
+  metadataBase: new URL("https://samdb.dev"),
   title: {
-    default: "QueryForge — a SQL database engine, internals on screen",
-    template: "%s · QueryForge",
+    default: "SAMDB — Systems, Architecture & Memory Database",
+    template: "%s · SAMDB",
   },
-  description: site.description,
-  authors: [{ name: site.author.name, url: site.author.portfolio }],
-  creator: site.author.name,
+  description:
+    "SAMDB: an educational SQL database engine with a terminal-grade workbench. Inspect tokenization, parsing, query planning, B+tree indexing, and WAL recovery — live.",
+  authors: [{ name: "Chanda Charan Reddy" }],
+  creator: "Chanda Charan Reddy",
   keywords: [
+    "SAMDB",
     "database engine",
+    "SQL workbench",
     "B+tree",
     "write-ahead log",
     "SQL parser",
     "query planner",
     "storage engine",
     "TypeScript",
-    "Charan Reddy",
+    "educational",
   ],
   openGraph: {
-    title: "QueryForge — a SQL database engine, internals on screen",
-    description: site.description,
-    url: site.url,
-    siteName: "QueryForge",
+    title: "SAMDB — Systems, Architecture & Memory Database",
+    description:
+      "Understand what happens between a SQL statement and the data it returns.",
+    siteName: "SAMDB",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "QueryForge — a SQL database engine, internals on screen",
+    title: "SAMDB — Systems, Architecture & Memory Database",
     description:
-      "I built a SQL database from scratch — storage, WAL, parser, planner, executor — and a playground that animates the B+tree and crash recovery as you type.",
+      "Understand what happens between a SQL statement and the data it returns.",
     creator: "@charanreddy",
   },
   robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0e14",
+  themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
 };

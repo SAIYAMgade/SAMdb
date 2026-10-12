@@ -1,23 +1,23 @@
-/** Single source of truth for identity + links, reused across pages, docs, and metadata. */
+/** Single source of truth for SAMDB identity + links. */
 export const site = {
-  name: "QueryForge",
-  tagline: "A SQL database engine built from scratch — with the internals on screen.",
+  name: "SAMDB",
+  fullName: "Systems, Architecture & Memory Database",
+  tagline: "Understand what happens between a SQL statement and the data it returns.",
   description:
-    "QueryForge is a working SQL database I wrote from zero — page-based storage, a B+tree index, a write-ahead log, a hand-written parser, a rule-based planner, and an iterator executor. The playground animates every layer as you type queries: the B+tree splitting, pages flushing, and the plan executing. No ORM. No Postgres underneath.",
-  url: "https://queryforge.charanreddy.dev",
+    "SAMDB is an educational SQL database engine and engineering workbench — page-based storage, B+tree index, write-ahead log, recursive-descent parser, rule-based planner, and Volcano iterator executor. An interactive terminal workbench animates the engine internals live.",
+  url: "https://samdb.dev",
   author: {
     name: "Chanda Charan Reddy",
     short: "Charan",
-    title: "AI & Automation Engineer",
+    title: "AI & Systems Engineer",
     location: "Bangalore, India",
     portfolio: "https://www.charanreddy.dev",
     github: "https://github.com/charanreddy-27",
-    githubRepo: "https://github.com/charanreddy-27/queryforge",
+    githubRepo: "https://github.com/charanreddy-27/QueryForge",
     linkedin: "https://www.linkedin.com/in/chandacharanreddy/",
     cal: "https://cal.com/charanreddy-27/30min",
     email: "charanreddychanda@gmail.com",
     orcid: "https://orcid.org/0009-0003-2414-6717",
   },
-  /** LinkedIn post about this project — placeholder until published. */
   linkedinPost: "",
 } as const;

@@ -1,188 +1,145 @@
 <div align="center">
 
-# QueryForge
+# SAMDB
+### Systems, Architecture & Memory Database
 
-### A SQL database engine built from scratch — with the internals on screen.
+```text
+======================================================================
+  [ SAMDB ]  EDUCATIONAL SQL ENGINE & DATABASE ENGINEERING WORKBENCH
+  "Understand what happens between a SQL statement and the data it returns"
+======================================================================
+```
 
-Storage engine · B+tree index · write-ahead log · hand-written parser · rule-based planner · iterator executor.
-No ORM. No Postgres underneath. **You wrote the thing under the thing.**
+Storage Engine · B+Tree Index · Write-Ahead Log (WAL) · Handwritten Parser · Rule-Based Optimizer · Volcano Iterator Executor
 
-[**▶ Live playground**](https://queryforge.charanreddy.dev) &nbsp;·&nbsp; [The build story](https://queryforge.charanreddy.dev/about-project) &nbsp;·&nbsp; [About](https://queryforge.charanreddy.dev/about)
-
-![tests](https://img.shields.io/badge/tests-23%20passing-22c55e) ![property based](https://img.shields.io/badge/fast--check-property%20tested-a78bfa) ![engine](https://img.shields.io/badge/engine-0%20deps%2C%20DOM--free-22d3ee) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6) ![license](https://img.shields.io/badge/license-MIT-64748b)
+![tests](https://img.shields.io/badge/tests-23%20passing-33ff00) ![fast-check](https://img.shields.io/badge/property--tested-fast--check-a78bfa) ![engine](https://img.shields.io/badge/engine-0%20deps%2C%20DOM--free-33ff00) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6) ![license](https://img.shields.io/badge/license-MIT-64748b)
 
 </div>
 
-> _Screenshot / GIF goes here — drop `docs/playground.png` and a `docs/recovery.gif` in and update these paths._
->
-> ![QueryForge playground](docs/playground.png)
+---
+
+## 1. Overview & Purpose
+
+**SAMDB** is an educational, developer-grade database engine and interactive SQL workbench designed to reveal what happens between a SQL query and the disk/memory structures that serve it.
+
+Built with a **Cyber-Industrial Terminal CLI Aesthetic** (phosphor-green `#33ff00`, deep `#0a0a0a` background, `JetBrains Mono` monospace typography, and zero-radius geometry), SAMDB turns abstract database internals into inspectable, interactive engineering primitives.
+
+Every highlight, timeline frame, tree node visitation, and page read/write is instrumented directly from the engine's event tracer (`Tracer`). **No simulated traces or fake metrics.**
 
 ---
 
-## The wow moment
-
-You type:
-
-```sql
-SELECT name, age FROM users WHERE id = 12
-```
-
-…and on screen, in real time:
-
-1. the **tokenizer** turns it into tokens, the **parser** builds an AST,
-2. the **planner** notices `id` is indexed and picks an **index scan**,
-3. the **B+tree** lights up the exact nodes it visits as it descends to the key,
-4. the **pages** flip as they're read,
-5. and the matching **row streams out**.
-
-Then flip one toggle — **force full scan** — and watch the row-visit counter jump from `3` to `18`. That's the cost of a missing index, made visible.
-
-Every highlight is replayed from the engine's own event log. **If the engine didn't do it, you don't see it.** No mocks.
-
----
-
-## What's actually in here
-
-This is a real (small) database, built in honest layers — each one independently testable and independently visualizable.
-
-| Layer | What it does |
-|---|---|
-| **Pager** | Hands out fixed-size **4 KB pages** over a backing buffer. Tracks reads/writes/allocs. |
-| **Heap** | Stores rows in a chain of **slotted pages** (the same layout Postgres/SQLite use). |
-| **B+tree** | A real B+tree where **every node is a page**. Insert, point lookup, range scan; splits propagate to the root; leaves are chained for fast ranges. |
-| **WAL** | A logical **write-ahead log**. Crash recovery rebuilds every page by replaying it. |
-| **Tokenizer + Parser** | Hand-written, recursive-descent. No parser generator. Source positions for friendly errors. |
-| **Planner + Optimizer** | Logical → physical plan. Chooses **index scan vs. sequential scan**, eliminates a `Sort` when the index already provides order. |
-| **Executor** | The **Volcano (iterator) model**: `SeqScan`, `IndexScan`, `Filter` (pushed into the scan), `Sort`, `Project`, `Limit`. |
-
-### Supported SQL
-
-```sql
-CREATE TABLE users (id INT PRIMARY KEY, name TEXT, age INT);
-INSERT INTO users (id, name, age) VALUES (1, 'ada', 36), (2, 'grace', 45);
-SELECT name, age FROM users WHERE id >= 8 AND age < 50 ORDER BY id LIMIT 10;
-```
-
-- Types: `INT`, `TEXT`
-- `WHERE`: AND-chains of `=  !=  <  <=  >  >=`
-- `ORDER BY … ASC|DESC`, `LIMIT n`
-- A B+tree index on any `INT PRIMARY KEY` (or `INT … INDEX`) column
-
-A small, **correct** subset on purpose — every node in the grammar is something the planner and executor genuinely understand.
-
-### The party tricks
-
-- **Index vs. scan toggle** — feel the difference in the row-visit counter.
-- **Time-travel scrubber** — step through the real execution trace frame by frame.
-- **Pull the plug** — wipe memory, then **Recover** to replay the WAL and watch every page rebuild. Durability you can press.
-
----
-
-## Architecture
+## 2. Architecture & Pipeline
 
 ```
-SQL text
-   │  tokenizer → recursive-descent parser
+SQL Query
+   │
    ▼
- AST  ──▶ Logical Plan ──▶ Optimizer (rule-based) ──▶ Physical Plan
-                                                          │
-                                                          ▼
-                                              Execution engine (iterators:
-                                              SeqScan / IndexScan / Filter /
-                                              Project / Sort / Limit)
-                                                          │
-                              ┌───────────────────────────┼───────────────┐
-                              ▼                            ▼               ▼
-                         Heap (slotted pages)        B+tree index      WAL (redo log)
-                              │                            │               │
-                              └──────────── Pager (fixed 4 KB pages over a buffer) ─────┘
+[ 1. Tokenizer & Parser ] (src/engine/tokenizer.ts, parser.ts)
+   │  - Handwritten recursive-descent parser (no generator)
+   │  - Produces typed AST (Statement) with exact character error offsets
+   ▼
+[ 2. Query Planner & Optimizer ] (src/engine/planner.ts)
+   │  - Logical Plan: Scan -> Filter -> Sort -> Project -> Limit
+   │  - Rule-Based Optimizer: Detects range/equality predicates on indexed columns
+   │  - Selects IndexScan vs SeqScan access paths
+   │  - Filter pushdown into scan operators
+   │  - Sort elimination when index ordering matches query
+   ▼
+[ 3. Volcano Iterator Executor ] (src/engine/executor.ts)
+   │  - Pipelined operators implementing next(): Tuple | null
+   │  - Short-circuiting execution (Limit stops upstream scans early)
+   ▼
+┌─────────────────────────────────┐   ┌─────────────────────────────────┐
+│ 4. Storage & Index Engine       │   │ 5. Durability: Write-Ahead Log  │
+│   - Pager: 4 KB slotted pages   │   │   - Append-only redo log        │
+│   - Heap: Linked slotted pages  │   │   - LSN ordering                │
+│   - B+Tree: Slotted-page nodes, │   │   - "Crash" & "Recover" replay  │
+│     leaf chaining, splits       │   │   - LocalStorage persistence    │
+└─────────────────────────────────┘   └─────────────────────────────────┘
+   │                                     │
+   └──────────────────┬──────────────────┘
+                      ▼
+[ 6. Instrumentation Tracer ] (src/engine/trace.ts)
+   - Emits structured events: btree.visit, page.read/write, row.scan, wal.append/replay
+   - Feeds the live playback scrubber & interactive terminal visualizations
 ```
 
-The whole engine lives in [`src/engine/`](src/engine) and is **pure TypeScript with zero DOM dependencies** — the exact same code runs in the Node test suite and in your browser tab. A deeper walkthrough is in [PROJECT_DEEP_DIVE.md](PROJECT_DEEP_DIVE.md).
+---
+
+## 3. Supported SQL Grammar
+
+SAMDB enforces a strict, honest subset of SQL without pretending to support unparsed syntax:
+
+* **DDL**:
+  ```sql
+  CREATE TABLE users (id INT PRIMARY KEY, name TEXT, age INT);
+  CREATE TABLE products (sku INT INDEX, title TEXT, price INT);
+  ```
+* **DML**:
+  ```sql
+  INSERT INTO users (id, name, age) VALUES (1, 'ada', 32), (2, 'linus', 45);
+  ```
+* **Querying & Filtering**:
+  ```sql
+  SELECT name, age FROM users WHERE id = 12;
+  SELECT id, name FROM users WHERE id >= 8 AND id <= 16 ORDER BY id ASC;
+  SELECT name, age FROM users WHERE age > 45 ORDER BY age DESC LIMIT 5;
+  ```
 
 ---
 
-## Tech stack
+## 4. Key Workbench Features
 
-| Choice | Why |
-|---|---|
-| **TypeScript (strict)** | One engine, runs unchanged in Node tests and the browser. |
-| **Next.js + React** | App-router pages, a fast client-rendered playground, zero-backend deploy. |
-| **Tailwind CSS** | The blueprint / oscilloscope design system stays consistent. |
-| **CodeMirror 6** | A real editor with a SQL mode and a `Cmd/Ctrl+Enter` run keymap. |
-| **Vitest + fast-check** | Property-based tests are the correctness proof. |
-| **Custom SVG (no D3)** | Full control over the tree layout and the aesthetic, fewer deps. |
-
-The engine runs **entirely client-side** in the deployed playground → zero backend cost, instant interaction.
+* **Terminal Workbench**: High-contrast green-screen aesthetic with resizable/stacking terminal windows.
+* **B+Tree Visualizer**: Live tree topology rendered with actual page IDs, key matches highlighted in neon green, node splits in red, and active search paths traced in real-time.
+* **Storage Pages Grid**: Real 4 KB slotted pages reflecting dirty status, access counts (`r`/`w`), and allocation events.
+* **Time-Travel Scrubber**: Step forwards or backwards through the execution trace frame-by-frame.
+* **WAL Recovery Lab**:
+  * `[ CRASH ]`: Purges derived memory/heap state to simulate power failure.
+  * `[ RECOVER ]`: Replays the logical write-ahead log to reconstruct all tables and indexes.
+* **Optimizer Comparison**: Toggle `FORCE FULL SCAN` to directly observe the difference in row-visit and page-read counters between an index scan and a sequential scan.
 
 ---
 
-## Run it locally
+## 5. Development & Testing
+
+### Installation
 
 ```bash
-git clone https://github.com/charanreddy-27/queryforge.git
-cd queryforge
+# Clone the repository
+git clone <repository-url>
+cd SAMdb
+
+# Install dependencies
 npm install
-npm run dev      # → http://localhost:3000
 ```
 
-Other scripts:
+### Run Locally
 
 ```bash
-npm test         # run the property + unit tests (23 of them)
-npm run build    # production build
+npm run dev
+# Open http://localhost:3000 (or http://localhost:3001) in your browser
+```
+
+### Automated Test Suite
+
+```bash
+# Run unit and property-based tests via Vitest
+npm test
+
+# Type checking
 npm run typecheck
+
+# Production build
+npm run build
 ```
 
 ---
 
-## Correctness is the headline
+## 6. Project History & Attribution
 
-The B+tree and the executor are **property-tested** with [fast-check](https://github.com/dubzzz/fast-check) — the tests generate thousands of random inputs and assert invariants hold:
+SAMDB was evolved from the open-source [QueryForge](https://github.com/charanreddy-27/QueryForge) project by Chanda Charan Reddy.
 
-- 10,000 random inserts → **every lookup correct, every leaf at the same depth** (the tree stays balanced).
-- Range scans return **exactly** the keys in `[lo, hi]`, sorted, for any random key set and bounds.
-- A `SELECT … WHERE` matches a brute-force reference filter for any random table.
-- **State after crash + WAL replay equals state before the crash.**
-
-```
-✓ src/engine/btree.test.ts     (5 tests)
-✓ src/engine/heap.test.ts      (3 tests)
-✓ src/engine/parser.test.ts    (6 tests)
-✓ src/engine/database.test.ts  (6 tests)
-✓ src/engine/wal.test.ts       (3 tests)
-
-Test Files  5 passed (5)
-     Tests  23 passed (23)
-```
-
----
-
-## Things I learned writing a database
-
-- **A balanced tree is an invariant, not a vibe.** I thought I understood B+trees until splits had to propagate correctly to a growing root. The property tests found the bugs my hand-picked examples never would.
-- **Durability is just discipline about ordering** — log the intent before you touch the data. Building the "pull the plug" button turned the WAL from a paragraph in a textbook into something I could press.
-- **The planner is where databases earn their reputation.** Parsing and execution are mechanical; the interesting decision is *walk the tree or scan the heap*, and making that toggle live is what makes the cost legible.
-- **Keeping the core DOM-free paid for itself.** The same code is tested in Node and animated in the browser — the visualization literally can't drift from reality.
-
-More, honestly told, in [the build story](https://queryforge.charanreddy.dev/about-project).
-
----
-
-## About the developer
-
-**Chanda Charan Reddy** (Charan) — AI & Automation Engineer, Bangalore.
-
-I ship production LLM systems — a Springer-published model that reads chest X-rays well enough for a radiologist to take seriously, document pipelines that run themselves. Before that I wrote real-time control code for jet engines at DRDO, where a millisecond of lag isn't a bug — it's a flameout. QueryForge is me opening the most-used black box in software.
-
-This is one project. There are 18 more (and a few jet engines) over at **[charanreddy.dev](https://www.charanreddy.dev)**.
-
-[Portfolio](https://www.charanreddy.dev) · [GitHub](https://github.com/charanreddy-27) · [LinkedIn](https://www.linkedin.com/in/chandacharanreddy/) · [Book a call](https://cal.com/charanreddy-27/30min)
-
-> **Want to build something — or break something interesting? [Let's talk.](https://cal.com/charanreddy-27/30min)**
-
----
-
-<div align="center">
-<sub>Built from scratch. Crafted with intent. · MIT licensed</sub>
-</div>
+* **Original Implementation**: QueryForge database core (MIT License).
+* **SAMDB Evolution**: Redesigned developer-grade terminal UI/UX, enlarged legible typography, enhanced schema exploration, updated color token system, and extended workbench observability.
+* **License**: MIT License (see [LICENSE](./LICENSE)).

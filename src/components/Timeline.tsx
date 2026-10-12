@@ -4,7 +4,7 @@ import { phaseLabel } from "@/lib/playback";
 
 function Icon({ d }: { d: string }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
       <path d={d} />
     </svg>
   );
@@ -34,46 +34,73 @@ export function Timeline({
   onTogglePlay: () => void;
 }) {
   const atEnd = step >= total;
+  const phaseLbl = phaseLabel(phase);
+
+  const phaseColor =
+    phase === "execute"
+      ? "text-[#33ff00] border-[#1f521f] bg-[#0a110a]"
+      : phase === "plan"
+      ? "text-[#ffb000] border-[#7a5500] bg-[#0a0800]"
+      : phase === "recover"
+      ? "text-[#ff3333] border-[#6b1414] bg-[#0a0505]"
+      : atEnd
+      ? "text-[#c8ffb0] border-[#1f521f] bg-[#0a0a0a]"
+      : "text-[#8dcf7a] border-[#1f521f] bg-[#0a0a0a]";
+
   return (
-    <div className="flex items-center gap-2 border-t border-ink-400 bg-ink-700/80 px-3 py-2">
+    <div className="flex items-center gap-3 border-t border-[#1f521f] bg-[#0d100d] px-4 py-2.5">
+      {/* Playback controls */}
       <div className="flex items-center gap-1">
-        <button className="btn px-1.5 py-1" aria-label="Jump to start" onClick={() => onStep(0)}>
+        <button className="btn px-2 py-1.5" aria-label="Jump to start" onClick={() => onStep(0)}>
           <Icon d={ICONS.start} />
         </button>
-        <button className="btn px-1.5 py-1" aria-label="Step back" onClick={() => onStep(Math.max(0, step - 1))}>
+        <button className="btn px-2 py-1.5" aria-label="Step back" onClick={() => onStep(Math.max(0, step - 1))}>
           <Icon d={ICONS.prev} />
         </button>
         <button
-          className="btn btn-run px-2 py-1"
+          className="btn btn-run px-2.5 py-1.5"
           aria-label={playing ? "Pause" : "Play"}
           onClick={onTogglePlay}
         >
           <Icon d={playing ? ICONS.pause : ICONS.play} />
         </button>
-        <button className="btn px-1.5 py-1" aria-label="Step forward" onClick={() => onStep(Math.min(total, step + 1))}>
+        <button className="btn px-2 py-1.5" aria-label="Step forward" onClick={() => onStep(Math.min(total, step + 1))}>
           <Icon d={ICONS.next} />
         </button>
-        <button className="btn px-1.5 py-1" aria-label="Jump to end" onClick={() => onStep(total)}>
+        <button className="btn px-2 py-1.5" aria-label="Jump to end" onClick={() => onStep(total)}>
           <Icon d={ICONS.end} />
         </button>
       </div>
 
-      <input
-        type="range"
-        min={0}
-        max={total}
-        value={Math.min(step, total)}
-        onChange={(e) => onStep(Number(e.target.value))}
-        aria-label="Scrub through the query's execution trace"
-        className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-ink-500 accent-active"
-      />
+      {/* Scrubber */}
+      <div className="relative flex-1 flex items-center h-6">
+        {/* Track */}
+        <div className="w-full h-1 bg-[#1f521f]" />
+        {/* Progress fill */}
+        <div
+          className="absolute left-0 h-1 bg-[#33ff00] transition-none"
+          style={{ width: total > 0 ? `${(Math.min(step, total) / total) * 100}%` : "0%" }}
+        />
+        {/* Range input (invisible but accessible) */}
+        <input
+          type="range"
+          min={0}
+          max={total}
+          value={Math.min(step, total)}
+          onChange={(e) => onStep(Number(e.target.value))}
+          aria-label="Scrub through the query's execution trace"
+          className="absolute inset-0 w-full cursor-pointer opacity-0"
+        />
+      </div>
 
-      <div className="flex w-40 items-center justify-end gap-2 font-mono text-2xs text-slatey-400">
-        <span className={`rounded px-1.5 py-0.5 ${atEnd ? "bg-ink-600 text-slatey-400" : "bg-active/15 text-active"}`}>
-          {phaseLabel(phase)}
+      {/* Phase label + counter */}
+      <div className="flex items-center gap-2.5 font-mono text-xs shrink-0">
+        <span className={`border px-2 py-1 uppercase tracking-wider text-xs font-bold ${phaseColor}`}>
+          {phaseLbl}
         </span>
-        <span className="tabular-nums">
-          {Math.min(step, total)}/{total}
+        <span className="tabular-nums text-xs">
+          <span className="text-[#33ff00] font-bold">{Math.min(step, total)}</span>
+          <span className="text-[#8dcf7a]"> / {total}</span>
         </span>
       </div>
     </div>

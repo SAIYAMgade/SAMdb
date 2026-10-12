@@ -3,13 +3,20 @@
 import type { PlanNode } from "@/engine";
 
 const OP_TONE: Record<string, string> = {
-  IndexScan: "border-index/60 bg-index/10 text-index",
-  SeqScan: "border-dirty/50 bg-dirty/10 text-dirty",
-  Scan: "border-ink-400 bg-ink-600 text-slatey-300",
-  Filter: "border-ink-400 bg-ink-600 text-slatey-200",
-  Sort: "border-ink-400 bg-ink-600 text-slatey-200",
-  Project: "border-ink-400 bg-ink-600 text-slatey-200",
-  Limit: "border-ink-400 bg-ink-600 text-slatey-200",
+  IndexScan:
+    "border-[#3d2b7a] bg-[#0a0814] text-[#a78bfa]",
+  SeqScan:
+    "border-[#7a5500] bg-[#0a0800] text-[#ffb000]",
+  Scan:
+    "border-[#1f521f] bg-[#0d100d] text-[#8dcf7a]",
+  Filter:
+    "border-[#1f521f] bg-[#0d100d] text-[#c8ffb0]",
+  Sort:
+    "border-[#1f521f] bg-[#0d100d] text-[#c8ffb0]",
+  Project:
+    "border-[#1f521f] bg-[#0d100d] text-[#8dcf7a]",
+  Limit:
+    "border-[#1f521f] bg-[#0d100d] text-[#c8ffb0]",
 };
 
 export function PlanView({
@@ -28,48 +35,79 @@ export function PlanView({
   onToggleForce: (v: boolean) => void;
 }) {
   if (!physical) {
-    return <div className="p-4 text-xs text-slatey-500">Run a SELECT to see its plan.</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+        <div className="font-mono text-[#33ff00] text-xs font-bold uppercase tracking-widest mb-2">NO PLAN COMPILED</div>
+        <div className="font-mono text-xs text-[#8dcf7a]">
+          Execute a SELECT statement to inspect physical and logical plan trees.
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col gap-4 p-3">
-      <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-col gap-3.5 p-3.5">
+      {/* Header: access type + force toggle */}
+      <div className="flex items-center justify-between gap-2 border-b border-[#1f521f] pb-3">
         <span
-          className={`chip ${access === "index" ? "border-index/60 text-index" : "border-dirty/60 text-dirty"}`}
+          className={`chip text-xs font-bold px-2.5 py-1 ${
+            access === "index"
+              ? "border-[#3d2b7a] bg-[#0a0814] text-[#a78bfa]"
+              : "border-[#7a5500] bg-[#0a0800] text-[#ffb000]"
+          }`}
         >
-          {access === "index" ? "INDEX SCAN" : "SEQ SCAN"}
+          {access === "index" ? "→ INDEX SCAN PATH" : "→ SEQUENTIAL SCAN PATH"}
         </span>
-        <label className="flex cursor-pointer items-center gap-2 text-2xs text-slatey-300">
-          <span className="font-mono">force full scan</span>
+
+        <label className="flex cursor-pointer items-center gap-2.5 font-mono text-xs font-semibold">
+          <span className="text-[#8dcf7a] uppercase tracking-wider">
+            FORCE FULL SCAN
+          </span>
           <button
             type="button"
             role="switch"
             aria-checked={forceSeqScan}
             aria-label="Force a full table scan"
             onClick={() => onToggleForce(!forceSeqScan)}
-            className={`relative h-4 w-8 cursor-pointer rounded-full border transition-colors duration-200 ${forceSeqScan ? "border-dirty bg-dirty/30" : "border-ink-400 bg-ink-600"}`}
+            className={`relative h-4.5 w-9 cursor-pointer border transition-colors duration-150 ${
+              forceSeqScan
+                ? "border-[#ffb000] bg-[#7a5500]/40"
+                : "border-[#1f521f] bg-[#0a0a0a]"
+            }`}
           >
             <span
-              className={`absolute top-0.5 h-2.5 w-2.5 rounded-full transition-all duration-200 ${forceSeqScan ? "left-4 bg-dirty" : "left-0.5 bg-slatey-400"}`}
+              className={`absolute top-0.5 h-3 w-3 transition-all duration-150 ${
+                forceSeqScan
+                  ? "left-5 bg-[#ffb000]"
+                  : "left-0.5 bg-[#4a7a40]"
+              }`}
             />
           </button>
         </label>
       </div>
 
+      {/* Optimizer reason */}
       {reason && (
-        <p className="rounded-md border border-ink-400 bg-ink-800/60 p-2.5 text-xs leading-relaxed text-slatey-300">
+        <div className="border border-[#1f521f] bg-[#0a0a0a] p-3 font-mono text-xs text-[#c8ffb0] leading-relaxed">
+          <span className="text-[#33ff00] font-bold">-- OPTIMIZER RATIONALE: </span>
           {reason}
-        </p>
+        </div>
       )}
 
+      {/* Physical plan */}
       <section>
-        <h3 className="panel-title mb-2">Physical plan</h3>
+        <div className="font-mono text-xs uppercase tracking-[0.16em] text-[#33ff00] font-bold mb-2.5">
+          ┌─ PHYSICAL EXECUTION PLAN ─
+        </div>
         <PlanTree node={physical} />
       </section>
 
+      {/* Logical plan (collapsed/muted) */}
       {logical && (
         <section>
-          <h3 className="panel-title mb-2">Logical plan</h3>
+          <div className="font-mono text-xs uppercase tracking-[0.16em] text-[#8dcf7a] font-bold mb-2.5">
+            ┌─ LOGICAL PLAN ─
+          </div>
           <PlanTree node={logical} muted />
         </section>
       )}
@@ -77,21 +115,40 @@ export function PlanView({
   );
 }
 
-function PlanTree({ node, muted, depth = 0 }: { node: PlanNode; muted?: boolean; depth?: number }) {
-  const tone = muted ? "border-ink-400 bg-ink-700 text-slatey-300" : OP_TONE[node.op] ?? "border-ink-400 bg-ink-600 text-slatey-200";
+function PlanTree({
+  node,
+  muted,
+  depth = 0,
+}: {
+  node: PlanNode;
+  muted?: boolean;
+  depth?: number;
+}) {
+  const tone = muted
+    ? "border-[#1f521f] bg-[#0a0a0a] text-[#4a7a40]"
+    : OP_TONE[node.op] ?? "border-[#1f521f] bg-[#0d100d] text-[#8dcf7a]";
+
   return (
-    <div className={depth ? "ml-3 border-l border-ink-400/60 pl-3" : ""}>
-      <div className={`mb-1.5 rounded-md border px-2.5 py-1.5 ${tone}`}>
-        <div className="flex items-center gap-2 font-mono text-xs font-semibold">
+    <div className={depth ? "ml-4 border-l border-[#1f521f] pl-4" : ""}>
+      <div className={`mb-2 border px-3 py-2 ${tone}`}>
+        <div className="flex items-center gap-2 font-mono text-sm font-bold">
           {node.title}
           {node.badge && (
-            <span className="rounded bg-black/30 px-1 py-px text-[9px] uppercase tracking-wide">
-              {node.badge}
+            <span className="bg-black/40 px-1.5 py-0.5 text-xs uppercase tracking-wide border border-current">
+              [{node.badge}]
             </span>
           )}
         </div>
-        {node.detail && <div className="mt-0.5 font-mono text-2xs text-slatey-400">{node.detail}</div>}
-        {node.note && <div className="mt-0.5 text-2xs italic text-slatey-500">{node.note}</div>}
+        {node.detail && (
+          <div className="mt-1 font-mono text-xs text-[#c8ffb0]">
+            {node.detail}
+          </div>
+        )}
+        {node.note && (
+          <div className="mt-1 font-mono text-xs italic text-[#4a7a40]">
+            -- {node.note}
+          </div>
+        )}
       </div>
       {node.children.map((c, i) => (
         <PlanTree key={i} node={c} muted={muted} depth={depth + 1} />
